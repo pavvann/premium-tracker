@@ -44,8 +44,8 @@ def get_binance_perp_klines(symbol, interval, limit):
     df["close"] = df["close"].astype(float)
     return df[["time", "close"]]
 
-spot = get_binance_klines("BTCUSDT", "1d", 90)
-perp = get_binance_perp_klines("BTCUSDT", "1d", 90)
+spot = get_binance_klines("ETHUSDT", "1d", 90)
+perp = get_binance_perp_klines("ETHUSDT", "1d", 90)
 
 print(spot.head())
 print(perp.head())
@@ -95,4 +95,26 @@ plt.xticks(rotation=25)
 plt.tight_layout()
 plt.show()
 
+
+df['signal_static'] = 0
+df.loc[df["basis_pct"] > static_threshold, 'signal_static'] = 1
+df.loc[df["basis_pct"] < -static_threshold, 'signal_static'] = -1
+
+
+# z-score
+df['basis_z'] = (df['basis_pct'] - mean_pct) / std_pct
+z_thresh = 2.0
+df['signal_z'] = 0
+df.loc[df["basis_z"] > z_thresh, 'signal_z'] = 1
+df.loc[df["basis_z"] < -z_thresh, 'signal_z'] = -1
+
+
+# quick summary
+print("Static signals > +{:.3f}% :".format(static_threshold), len(df[df["signal_static"]==1]))
+print("Static signals < -{:.3f}% :".format(static_threshold), len(df[df["signal_static"]==-1]))
+print("Z-score signals (|z| > {:.1f}) :".format(z_thresh), len(df[df['signal_z']!=0]))
+
+
+# actual rows for z-score signals
+print(df.loc[df['signal_z']!=0, ['time', 'close_spot', 'close_perp', 'basis', 'basis_pct', 'basis_z', 'signal_z']])
 
